@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: openai chat-gpt with whatsapp
+  
+Globals:
+  Function:
+    Runtime: nodejs14.x
+    CodeUri: src/
+    Timeout: 180
+    MemorySize: 128
+    Environment:
+      Variables:
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+        FACEBOOK_URL: https://graph.facebook.com/v15.0
+        VAULT: openai-whatsapp
+        TABLE_NAME: !Ref SetupModelTable
+
+Resources:       
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: openai-whatsapp
+      StageName: Prod
+  
+  WebhookCustomerVerify:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: verify.lambdaHandler
+      Events:
+        WebhookEventVerify:
+          Type: Api
+          Properties:
+            Path: /whatsapp
+            Method: GET
+            RestApiId: !Ref ApiGateway
+      Environment:
+        Variables:
+          VERIFY_TOKEN: VERIFY
+
+  ReceiveMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: receive.lambdaHandler
+      Events:
+        WebhookEventEcho:
+          Type: Api
+          Properties:
+            Path: /whatsapp
+            Method: POST
+            RestApiId: !Ref ApiGateway
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: '*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SetupModelTable
+  
+  SetupModelTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SETUP_MODEL_TABLE
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+        - AttributeName: Date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+        - AttributeName: Date
+          KeyType: RANGE
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway orginal endpoint URL"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod"
