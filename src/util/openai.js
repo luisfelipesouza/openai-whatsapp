@@ -1,31 +1,17 @@
 const { Configuration, OpenAIApi } = require("openai");
+const secrets = require("./secrets");
 
-exports.configureOpenAi = async (openaiKey, organizationId) => {
-  try {
-    const openaiConfig = new Configuration({
-      organization: organizationId,
-      apiKey: openaiKey,
-    });
-    return openaiConfig;
-  } catch (ex) {
-    console.error("Error", ex);
-    return {
-      statusCode: ex.statusCode ? ex.statusCode : 500,
-      body: JSON.stringify(
-        {
-          error: ex.name ? ex.name : "Exception",
-          message: ex.message ? ex.message : "Unknown error",
-          stack: ex.stack ? ex.stack : "Unknown trace",
-        },
-        null,
-        2
-      ),
-    };
-  }
-};
+const vault = process.env.VAULT;
 
-exports.getOpenAiResponse = async (openaiConfig, clientText) => {
-  const openai = new OpenAIApi(openaiConfig);
+exports.getSecretsString = async (vault) => {
+  const secretValue = await secrets.getSecrets(vault);
+  return JSON.parse(secretValue.SecretString);
+}
+
+exports.getOpenAiResponse = async (clientText) => {
+  const { openaiKey, organizationId } = await this.getSecretsString(vault);
+  let botResponse = "";
+
   const options = {
     model: "text-davinci-003", // gpt model
     prompt: clientText,
@@ -33,26 +19,16 @@ exports.getOpenAiResponse = async (openaiConfig, clientText) => {
     max_tokens: 4000, // 4000 max
   };
 
-  try {
-    const response = await openai.createCompletion(options);
-    let botResponse = "";
-    response.data.choices.forEach(({ text }) => {
-      botResponse += text;
-    });
-    return botResponse.trim();
-  } catch (ex) {
-    console.error("Error", ex);
-    return {
-      statusCode: ex.statusCode ? ex.statusCode : 500,
-      body: JSON.stringify(
-        {
-          error: ex.name ? ex.name : "Exception",
-          message: ex.message ? ex.message : "Unknown error",
-          stack: ex.stack ? ex.stack : "Unknown trace",
-        },
-        null,
-        2
-      ),
-    };
-  }
+  const openaiConfig = new Configuration({
+    organization: organizationId,
+    apiKey: openaiKey,
+  });
+  const openai = new OpenAIApi(openaiConfig);
+  const response = await openai.createCompletion(options);
+  
+  response.data.choices.forEach(({ text }) => {
+    botResponse += text;
+  });
+
+  return botResponse.trim();
 };

@@ -6,16 +6,22 @@ Globals:
   Function:
     Runtime: nodejs14.x
     CodeUri: src/
-    Timeout: 180
+    Timeout: 250
     MemorySize: 128
     Environment:
       Variables:
         AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
         FACEBOOK_URL: https://graph.facebook.com/v15.0
         VAULT: openai-whatsapp
-        TABLE_NAME: !Ref SetupModelTable
+        MODEL_TABLE_NAME: !Ref SetupModelTable
+        LANG_TABLE_NAME: !Ref SetupLanguageTable
 
-Resources:       
+Resources:   
+  AudioS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: audio-bucket-whatsapp-openai    
+
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
@@ -48,14 +54,105 @@ Resources:
             Path: /whatsapp
             Method: POST
             RestApiId: !Ref ApiGateway
+      Environment:
+        Variables:
+          AWS_S3_BUCKET_NAME: !Ref AudioS3Bucket
       Policies:
         - Statement:
             Effect: Allow
             Action:
               - secretsmanager:GetSecretValue
             Resource: '*'
+        - S3CrudPolicy:
+            BucketName: !Ref AudioS3Bucket
         - DynamoDBCrudPolicy:
             TableName: !Ref SetupModelTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SetupLanguageTable
+
+  TranscribeAudioFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: transcription.lambdaHandler
+      Events:
+        TranscribeS3Event:
+          Type: S3
+          Properties:
+            Bucket: 
+              Ref: AudioS3Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix      
+                    Value: .ogg 
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - transcribe:StartTranscriptionJob
+              - transcribe:GetTranscriptionJob
+              - s3:*
+            Resource: '*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SetupModelTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SetupLanguageTable
+
+  SpeechAudioFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: speech.lambdaHandler
+      Events:
+        TranslateS3Event:
+          Type: S3
+          Properties:
+            Bucket: 
+              Ref: AudioS3Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix      
+                    Value: .json
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - transcribe:GetTranscriptionJob
+              - polly:StartSpeechSynthesisTask
+              - polly:GetSpeechSynthesisTask
+              - secretsmanager:GetSecretValue
+              - s3:*
+            Resource: '*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SetupModelTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SetupLanguageTable
+  
+  ResponseAudioFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: response.lambdaHandler
+      Events:
+        ResponseS3Event:
+          Type: S3
+          Properties:
+            Bucket: 
+              Ref: AudioS3Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix      
+                    Value: .mp3
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - s3:*
+            Resource: '*'
   
   SetupModelTable:
     Type: AWS::DynamoDB::Table
@@ -71,6 +168,20 @@ Resources:
           KeyType: HASH
         - AttributeName: Date
           KeyType: RANGE
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  SetupLanguageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SETUP_LANG_TABLE
+      AttributeDefinitions:
+        - AttributeName: phoneNumber
+          AttributeType: S
+      KeySchema:
+        - AttributeName: phoneNumber
+          KeyType: HASH
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5

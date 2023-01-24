@@ -21,12 +21,13 @@ exports.lambdaHandler = async (event, context) => {
       }
     }
   } catch (ex) {
-    console.error("Error Name \n", ex.name);
-    console.error("Error Message \n", ex.message);
-    console.error("Error Stack \n", ex.stack);
-
+    console.error(`
+      Error Name: ${ex.name}\n 
+      Error Message ${ex.message}\n 
+      Error Stack ${ex.stack}`
+    );
     return {
-      statusCode: 500,
+      statusCode: ex.statusCode ? ex.statusCode : 500
     };
   }
   
