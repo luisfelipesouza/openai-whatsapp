@@ -5,10 +5,13 @@
 * [Node v14](https://nodejs.org/en/blog/release/v14.17.3/)
 
 ## AWS Resources in use
-* [Lambda](https://aws.amazon.com/lambda/)
-* [API Gateway](https://aws.amazon.com/api-gateway/)
-* [DynamoDB](https://aws.amazon.com/dynamodb/)
-* [Secrets Manager](https://aws.amazon.com/secrets-manager/)
+* [AWS Lambda](https://aws.amazon.com/lambda/)
+* [Amazon API Gateway](https://aws.amazon.com/api-gateway/)
+* [Amazon DynamoDB](https://aws.amazon.com/dynamodb/)
+* [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/)
+* [Amazon Transcribe](https://aws.amazon.com/transcribe/)
+* [Amazon Polly](https://aws.amazon.com/polly/)
+* [Amazon S3](https://aws.amazon.com/s3/)
 
 ## Setup AWS CLI
 ```bash
