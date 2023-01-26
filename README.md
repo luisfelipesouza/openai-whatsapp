@@ -12,6 +12,7 @@
 * [Amazon Transcribe](https://aws.amazon.com/transcribe/)
 * [Amazon Polly](https://aws.amazon.com/polly/)
 * [Amazon S3](https://aws.amazon.com/s3/)
+* [AWS X-Ray](https://aws.amazon.com/xray/)
 
 ## Setup AWS CLI
 ```bash
