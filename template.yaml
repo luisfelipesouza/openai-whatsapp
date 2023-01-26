@@ -6,6 +6,7 @@ Globals:
   Function:
     Runtime: nodejs14.x
     CodeUri: src/
+    Tracing: Active
     Timeout: 250
     MemorySize: 128
     Environment:
@@ -27,6 +28,7 @@ Resources:
     Properties:
       Name: openai-whatsapp
       StageName: Prod
+      TracingEnabled: True
   
   WebhookCustomerVerify:
     Type: AWS::Serverless::Function

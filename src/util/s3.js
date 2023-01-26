@@ -1,8 +1,12 @@
-const AWS = require("aws-sdk");
+const AWSXRay = require('aws-xray-sdk');
 
 const awsRegion = process.env.AWS_REGION || "us-east-1";
 const options = { region: awsRegion };
 const bucketName = process.env.AWS_S3_BUCKET_NAME;
+
+// Capture all AWS clients we create
+const AWS = AWSXRay.captureAWS(require('aws-sdk'));
+
 const s3 = new AWS.S3(options);
 
 exports.uploadFile = async (object) => {

@@ -1,9 +1,12 @@
-const AWS = require("aws-sdk");
+const AWSXRay = require('aws-xray-sdk');
 const { v4: uuidv4 } = require('uuid');
 
 const awsRegion = process.env.AWS_REGION || "us-east-1";
 const modelTableName = process.env.MODEL_TABLE_NAME;
 const langTableName = process.env.LANG_TABLE_NAME;
+
+// Capture all AWS clients we create
+const AWS = AWSXRay.captureAWS(require('aws-sdk'));
 
 const options = { region: awsRegion };
 
@@ -43,7 +46,7 @@ exports.createLangItem = async (item) => {
       TableName: langTableName,
       Item: {
           phoneNumber: key,
-          Name: name,
+          Name: name ? name : "?",
           LangTranslation: language,
           CreatedAt: timestamp,
           UpdatedAt: timestamp

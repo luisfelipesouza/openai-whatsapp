@@ -4,6 +4,7 @@
   "description": "",
   "main": "receive.js",
   "dependencies": {
+    "aws-xray-sdk": "^3.4.1",
     "axios": "^1.2.2",
     "openai": "^3.1.0",
     "uuid": "^9.0.0"

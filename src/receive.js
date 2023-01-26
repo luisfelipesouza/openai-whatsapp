@@ -27,15 +27,17 @@ exports.lambdaHandler = async (event, context) => {
 
         const name = body.entry[0].changes[0].value.contacts[0].profile.name;
 
+        console.log(`NEW REQUEST OF ${type} type ${JSON.stringify(body.entry[0].changes[0].value.messages[0][type])}`)
+
         if (type === "unsupported") {
           return {
             statusCode: 200,
           };
         }
 
-        console.log(`***RECEIVE from ${from} (${type})***`);
-
         await whatsapp.readMessage(messageId);
+
+        console.log(`***RECEIVE from ${from} (${type})***`);
 
         // check if is the first message from user
         const tableData = await database.readLangItem(from);
@@ -80,7 +82,7 @@ exports.lambdaHandler = async (event, context) => {
           });
 
           await whatsapp.sendMessage({
-            body: "Hello!\nAproveite a *nova funcionalidade* e envie uma mensagem de *audio*.",
+            body: `Hello ${tableData.Item.Name}!\nAproveite a *nova funcionalidade* e envie uma mensagem de *audio*. 😀`,
             sendTo: from,
           });
         }

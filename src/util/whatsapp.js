@@ -1,5 +1,10 @@
 const axios = require("axios");
+const AWSXRay = require('aws-xray-sdk');
 const secrets = require("./secrets");
+
+// Capture Axios requests
+AWSXRay.captureHTTPsGlobal(require('http'));
+AWSXRay.captureHTTPsGlobal(require('https'));
 
 const facebookUrl = process.env.FACEBOOK_URL;
 const vault = process.env.VAULT;
